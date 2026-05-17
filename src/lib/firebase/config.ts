@@ -12,13 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// Pastikan inisialisasi aplikasi hanya berjalan satu kali
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-
-// Inisialisasi layanan Firebase
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-// EKSPOR HANYA SATU KALI DI SINI AGAR TYPESCRIPT TIDAK MARAH
-export { app, auth, db, storage };
+// Ekspor langsung di deklarasi variabel
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
