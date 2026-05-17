@@ -10,7 +10,8 @@ interface CookingState {
   remainingSeconds: number;
   isRunning: boolean;
   lastUpdated: number;
-  // State baru untuk mengontrol dialog kustomisasi secara global
+  
+  // State Dialog Kustomisasi Global
   customizingTemplateId: string | null;
   setCustomizingTemplateId: (id: string | null) => void;
   
@@ -30,7 +31,7 @@ export const useCookingStore = create<CookingState>()(
       remainingSeconds: 0,
       isRunning: false,
       lastUpdated: Date.now(),
-      // Inisialisasi awal
+      
       customizingTemplateId: null,
       setCustomizingTemplateId: (id) => set({ customizingTemplateId: id }),
 
@@ -43,7 +44,7 @@ export const useCookingStore = create<CookingState>()(
           remainingSeconds: totalSeconds,
           isRunning: true,
           lastUpdated: Date.now(),
-          customizingTemplateId: null // Tutup dialog saat sesi dimulai
+          customizingTemplateId: null // Otomatis tutup dialog saat mulai
         });
       },
 
@@ -101,7 +102,7 @@ export const useCookingStore = create<CookingState>()(
     {
       name: 'rumah-flow-cooking-storage',
       storage: createJSONStorage(() => localStorage),
-      // Lewati penyimpanan untuk dialog kustomisasi agar tidak tersimpan permanen
+      // SANGAT PENTING: Jangan simpan status dialog ke localstorage
       partialize: (state) => ({
         activeTemplate: state.activeTemplate,
         currentStageIndex: state.currentStageIndex,

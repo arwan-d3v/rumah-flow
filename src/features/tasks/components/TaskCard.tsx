@@ -37,11 +37,11 @@ export function TaskCard({ task }: TaskCardProps) {
         isDragging ? "opacity-50 z-50 shadow-lg scale-105" : "hover:shadow-md hover:border-sand-200"
       )}
     >
-      {/* Handle untuk Drag */}
+      {/* Handle untuk Drag Area (Hanya di icon grip ini dnd aktif) */}
       <div 
         {...attributes} 
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-sand-300 hover:text-sage-500 rounded-md"
+        className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-sand-300 hover:text-sage-500 rounded-md touch-none"
       >
         <GripVertical className="w-5 h-5" />
       </div>
@@ -53,16 +53,16 @@ export function TaskCard({ task }: TaskCardProps) {
         {task.notes && <p className="text-xs text-sand-500 mt-0.5 line-clamp-1">{task.notes}</p>}
       </div>
 
-      {/* Tombol Masak (Memicu State Global) */}
+{/* Tombol Masak (Versi Paling Aman) */}
       {task.cookingTemplateId && (
         <button 
+          type="button" // PENTING: Mencegah form submission tak terduga
           onClick={(e) => {
             e.preventDefault();
-            e.stopPropagation(); // Stop dnd-kit pointer event bubble
+            console.log("🔥 TOMBOL MASAK DIKLIK UNTUK RESEP:", task.cookingTemplateId);
             setCustomizingTemplateId(task.cookingTemplateId || null);
           }}
-          onPointerDown={(e) => e.stopPropagation()}
-          className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg text-rose-500 transition-colors cursor-pointer group/btn z-10"
+          className="relative z-50 flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg text-rose-500 transition-colors cursor-pointer group/btn"
           title="Buka Menu Masak"
         >
           <ChefHat className="w-4 h-4 group-hover/btn:hidden" />

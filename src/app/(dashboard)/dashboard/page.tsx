@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useCookingStore } from '@/store/useCookingStore';
@@ -13,21 +14,15 @@ import { signOut } from 'firebase/auth';
 import { HorizontalDatePicker } from '@/components/shared/HorizontalDatePicker';
 import { LogOut, Plus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation'; // Tambahkan untuk redirect
 
 // Core Features Components
 import CookingMode from '@/features/cooking/components/CookingMode';
 import { RecipeCustomizerDialog } from '@/features/cooking/components/RecipeCustomizerDialog';
 
-// DnD Kit Imports (Ganti Pointer dengan Mouse & Touch)
+// DnD Kit Imports
 import { 
-  DndContext, 
-  DragEndEvent, 
-  useSensor, 
-  useSensors, 
-  MouseSensor, 
-  TouchSensor, 
-  closestCorners 
+  DndContext, DragEndEvent, useSensor, useSensors, 
+  MouseSensor, TouchSensor, closestCorners 
 } from '@dnd-kit/core';
 import { TaskSection } from '@/features/tasks/components/TaskSection';
 
@@ -41,40 +36,41 @@ const SECTIONS = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const { user, isLoading } = useAuthStore();
   const { tasks, moveTask } = useTaskStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const router = useRouter();
 
   const customizingTemplateId = useCookingStore((state) => state.customizingTemplateId);
   const setCustomizingTemplateId = useCookingStore((state) => state.setCustomizingTemplateId);
 
+  // Hook sinkronisasi waktu offline
   useCookingResume();
 
-  // ROUTE GUARD: Jika user kedapatan logout atau tidak punya sesi, paksa pindah ke halaman login
+  // PENYELAMAT HYDRATION
   useEffect(() => {
-    if (!isLoading && !user) {
+    setIsMounted(true);
+  }, []);
+
+  // ROUTE GUARD (Pengaman Logout)
+  useEffect(() => {
+    if (isMounted && !isLoading && !user) {
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, isMounted]);
 
-  // KONFIGURASI SENSOR AMAN: Memisahkan interaksi Desktop (Mouse) dan HP Emulator (Touch)
+  // PENYELAMAT SENSOR KLIK vs DRAG
   const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: { distance: 5 }, // Geser 5px baru dianggap menyeret
+    activationConstraint: { distance: 5 },
   });
-  
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: { delay: 200, tolerance: 5 }, // Tahan 200ms baru dianggap menyeret, ketukan instan tetap dibaca sebagai klik biasa
+    activationConstraint: { delay: 250, tolerance: 5 },
   });
-
   const sensors = useSensors(mouseSensor, touchSensor);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Gagal logout:", error);
-    }
+    await signOut(auth);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -84,7 +80,6 @@ export default function DashboardPage() {
     const activeId = active.id as string;
     const overId = over.id as string;
     const overData = over.data.current;
-
     const targetSection = overData?.type === 'Section' ? overId : overData?.task?.section;
 
     if (targetSection) {
@@ -92,22 +87,27 @@ export default function DashboardPage() {
     }
   };
 
-  // Jangan render konten apa pun selama mengecek status otentikasi user
-  if (isLoading || !user) {
-    return null;
+  // LAYAR LOADING SAAT HYDRATION BERLANGSUNG
+  if (!isMounted || isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
+        <div className="text-sage-600 font-semibold animate-pulse flex items-center gap-2">
+          <span>Menyiapkan Dapur Rumah Flow...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-sand-50 pb-20">
-      <CookingMode />
       
-      {customizingTemplateId && (
-        <RecipeCustomizerDialog
-          templateId={customizingTemplateId}
-          isOpen={!!customizingTemplateId}
-          onClose={() => setCustomizingTemplateId(null)}
-        />
-      )}
+      {/* GLOBAL OVERLAYS (Aman dari efek Drag CSS) */}
+      <CookingMode />
+      <RecipeCustomizerDialog
+        templateId={customizingTemplateId || ''}
+        isOpen={!!customizingTemplateId}
+        onClose={() => setCustomizingTemplateId(null)}
+      />
 
       <header className="bg-white px-6 pt-10 pb-6 rounded-b-[2.5rem] shadow-sm shadow-sand-900/5 mb-6 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto">
@@ -120,7 +120,15 @@ export default function DashboardPage() {
                 Halo, {user?.displayName ? user.displayName.split(' ')[0] : 'Bunda'}
               </h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-sand-500 hover:text-rose-500 rounded-full cursor-pointer">
+          <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => {
+                console.log("🚪 TOMBOL LOGOUT DIKLIK!");
+                handleLogout();
+              }} 
+              className="text-sand-500 hover:text-rose-500 rounded-full cursor-pointer relative z-50 pointer-events-auto"
+            >
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
