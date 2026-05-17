@@ -53,15 +53,18 @@ export function QuickAddTaskDialog({ isOpen, onClose, selectedDateStr }: Props) 
         status: 'todo' as const,
         section: section,
         targetDate: selectedDateStr,
-        recurrence: isDaily ? 'daily' : 'none' as const, // Terapkan perulangan harian jika dicentang
+        
+        // PERBAIKAN TYPESCRIPT DI BARIS BAWAH INI:
+        recurrence: (isDaily ? 'daily' : 'none') as 'daily' | 'none',
+        
         order: tasks.filter(t => t.targetDate === selectedDateStr && t.section === section).length,
-        // Jika kategori Meals dan ada template yang dipilih, sematkan ID-nya untuk memicu Cooking Mode
         ...(section === 'meals' && selectedTemplateId ? { cookingTemplateId: selectedTemplateId } : {}),
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
 
       await addTask(newTask);
+
       
       // Reset form agar bersih saat dibuka kembali
       setTitle(''); 
