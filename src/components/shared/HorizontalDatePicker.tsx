@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { format, addDays, subDays, isSameDay } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { clsx } from 'clsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useHolidayStore } from '@/store/useHolidayStore'; // IMPORT STORE BARU
 
 interface Props {
   selectedDate: Date;
@@ -12,77 +11,57 @@ interface Props {
 }
 
 export function HorizontalDatePicker({ selectedDate, onChange }: Props) {
-  const [dates, setDates] = useState<Date[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const getHolidayByDate = useHolidayStore(state => state.getHolidayByDate);
 
-  // Generate 15 hari ke belakang dan 15 hari ke depan dari hari ini
-  useEffect(() => {
-    const today = new Date();
-    const generatedDates = [];
-    for (let i = -15; i <= 15; i++) {
-      generatedDates.push(i === 0 ? today : i < 0 ? subDays(today, Math.abs(i)) : addDays(today, i));
-    }
-    setDates(generatedDates);
-  }, []);
-
-  // Auto-scroll ke tanggal yang dipilih saat komponen dimuat
-  useEffect(() => {
-    if (scrollRef.current) {
-      const activeElement = scrollRef.current.querySelector('[data-active="true"]');
-      if (activeElement) {
-        activeElement.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      }
-    }
-  }, [dates, selectedDate]);
+  // Buat array 7 hari (3 hari sebelum, hari H, 3 hari sesudah)
+  const days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 3 + i);
+    return d;
+  });
 
   return (
-    <div className="flex items-center gap-2 w-full max-w-full">
-      <button 
-        onClick={() => onChange(subDays(selectedDate, 1))}
-        className="p-2 text-sand-500 hover:text-sage-500 hover:bg-sage-50 rounded-full transition-colors"
-      >
+    <div className="flex items-center justify-between gap-2 md:gap-4 bg-white p-2 rounded-3xl shadow-sm border border-sand-100">
+      <button onClick={() => onChange(subDays(selectedDate, 1))} className="p-2 text-sand-400 hover:text-sage-500 transition-colors">
         <ChevronLeft className="w-5 h-5" />
       </button>
-      
-      <div 
-        ref={scrollRef}
-        className="flex-1 flex gap-3 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory px-4 py-2"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {dates.map((date, idx) => {
-          const isSelected = isSameDay(date, selectedDate);
-          const isToday = isSameDay(date, new Date());
+
+      <div className="flex flex-1 justify-between overflow-x-auto no-scrollbar gap-2 px-2">
+        {days.map((date, idx) => {
+          const isSelected = date.toDateString() === selectedDate.toDateString();
+          const dateStr = format(date, 'yyyy-MM-dd');
           
+          // FASE 3: Cek apakah tanggal ini adalah hari libur nasional
+          const holiday = getHolidayByDate(dateStr);
+          const isHoliday = !!holiday;
+
           return (
             <button
               key={idx}
-              data-active={isSelected}
               onClick={() => onChange(date)}
-              className={clsx(
-                "snap-center flex flex-col items-center justify-center min-w-[4rem] h-[5rem] rounded-[1.25rem] transition-all duration-300",
+              className={`flex flex-col items-center justify-center min-w-[3.5rem] h-16 rounded-2xl transition-all ${
                 isSelected 
-                  ? "bg-sage-500 text-white shadow-md shadow-sage-900/10 scale-105" 
-                  : "bg-white text-sand-900 hover:bg-sand-50 border border-sand-100"
-              )}
+                  ? 'bg-sage-500 text-white shadow-md shadow-sage-900/20 scale-105' 
+                  : 'bg-transparent text-sand-600 hover:bg-sand-50'
+              }`}
             >
-              <span className={clsx("text-xs font-medium uppercase mb-1", isSelected ? "text-sage-100" : "text-sand-500")}>
-                {format(date, 'EEE', { locale: id })}
+              <span className={`text-[10px] font-bold uppercase tracking-widest ${isHoliday && !isSelected ? 'text-rose-500' : ''}`}>
+                {format(date, 'E', { locale: id })}
               </span>
-              <span className={clsx("text-xl font-semibold", isToday && !isSelected && "text-rose-500")}>
+              <span className={`text-xl font-semibold mt-0.5 ${isHoliday && !isSelected ? 'text-rose-600' : ''}`}>
                 {format(date, 'd')}
               </span>
-              {isToday && (
-                <div className={clsx("w-1 h-1 rounded-full mt-1", isSelected ? "bg-white" : "bg-rose-500")} />
+              
+              {/* Indikator Titik Merah Hari Libur */}
+              {isHoliday && (
+                <div className={`w-1 h-1 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-rose-500'}`} />
               )}
             </button>
           );
         })}
       </div>
 
-      <button 
-        onClick={() => onChange(addDays(selectedDate, 1))}
-        className="p-2 text-sand-500 hover:text-sage-500 hover:bg-sage-50 rounded-full transition-colors"
-      >
+      <button onClick={() => onChange(addDays(selectedDate, 1))} className="p-2 text-sand-400 hover:text-sage-500 transition-colors">
         <ChevronRight className="w-5 h-5" />
       </button>
     </div>

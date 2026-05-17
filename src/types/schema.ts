@@ -1,14 +1,24 @@
-import { Timestamp } from 'firebase/firestore';
+// src/types/schema.ts
 
-export interface User {
-  id: string; 
-  email: string;
-  displayName: string;
-  preferences: {
-    theme: 'sage' | 'warm-sand' | 'soft-rose' | 'system';
-    darkMode: boolean;
-  };
-  createdAt: Timestamp;
+export type SectionType = 'morning' | 'meals' | 'chores' | 'family' | 'self-care' | 'errands';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type TaskStatus = 'todo' | 'in_progress' | 'completed';
+
+export interface CookingStage {
+  id: string;
+  order: number;
+  name: string;
+  durationMin: number;
+  durationSec: number;
+  instruction: string;
+  autoNext: boolean;
+}
+
+export interface CookingTemplate {
+  id: string;
+  name: string;
+  totalDurationMin: number;
+  stages: CookingStage[];
 }
 
 export interface Task {
@@ -16,30 +26,15 @@ export interface Task {
   userId: string;
   title: string;
   notes?: string;
-  status: 'todo' | 'in-progress' | 'completed';
-  section: 'morning' | 'meals' | 'chores' | 'family' | 'self-care' | 'errands';
-  date: string; // Format: YYYY-MM-DD
-  order: number; 
-  isRecurring: boolean;
-  cookingTemplateId?: string; 
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface CookingTemplate {
-  id: string;
-  userId?: string; 
-  name: string;
-  totalDurationMin: number;
-  stages: CookingStage[];
-}
-
-export interface CookingStage {
-  id: string;
+  status: TaskStatus;
+  section: SectionType;
+  
+  // FASE 2: Time Engine Fields
+  targetDate: string; // Format ISO: YYYY-MM-DD
+  recurrence: RecurrenceType;
+  
   order: number;
-  name: string; 
-  durationMin: number;
-  durationSec: number;
-  instruction: string;
-  autoNext: boolean; 
+  cookingTemplateId?: string;
+  createdAt: number; // Pakai unix timestamp agar mudah diserialisasi
+  updatedAt: number;
 }

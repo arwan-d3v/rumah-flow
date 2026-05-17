@@ -1,60 +1,110 @@
 import { create } from 'zustand';
-import { Task } from '@/types/schema';
-import { Timestamp } from 'firebase/firestore';
+import { Task, SectionType } from '@/types/schema';
+import { db } from '@/lib/firebase/config';
+import { 
+  collection, doc, setDoc, updateDoc, deleteDoc, 
+  query, where, onSnapshot 
+} from 'firebase/firestore';
+import { toast } from 'sonner';
 
 interface TaskState {
   tasks: Task[];
-  moveTask: (taskId: string, newSection: Task['section']) => void;
+  isTasksLoading: boolean;
+  
+  // Real-time Listener
+  subscribeToTasks: (userId: string) => () => void;
+  
+  // CRUD Actions
+  addTask: (task: Task) => Promise<void>;
+  moveTask: (taskId: string, newSection: SectionType) => Promise<void>;
+  toggleTaskStatus: (taskId: string) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
 }
 
-// Dummy data agar bisa langsung ditest drag & drop
-const dummyTasks: Task[] = [
-  {
-    id: '1',
-    userId: 'user1',
-    title: 'Siapkan Bekal Anak',
-    status: 'todo',
-    section: 'morning',
-    date: new Date().toISOString().split('T')[0],
-    order: 0,
-    isRecurring: true,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  },
-  {
-    id: '2',
-    userId: 'user1',
-    title: 'Masak Sop Buntut (Slow Cooker)',
-    notes: 'Resep dari mertua',
-    status: 'todo',
-    section: 'meals',
-    date: new Date().toISOString().split('T')[0],
-    order: 0,
-    isRecurring: false,
-    cookingTemplateId: 'template_sop', // Ini nanti untuk trigger fitur Cooking Mode
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  },
-  {
-    id: '3',
-    userId: 'user1',
-    title: 'Cuci Pakaian Putih',
-    status: 'todo',
-    section: 'chores',
-    date: new Date().toISOString().split('T')[0],
-    order: 0,
-    isRecurring: true,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  }
-];
+export const useTaskStore = create<TaskState>((set, get) => ({
+  tasks: [],
+  isTasksLoading: true,
 
-export const useTaskStore = create<TaskState>((set) => ({
-  tasks: dummyTasks,
-  moveTask: (taskId, newSection) =>
+  // 1. MENDENGARKAN PERUBAHAN DATABASE SECARA REAL-TIME
+  subscribeToTasks: (userId) => {
+    set({ isTasksLoading: true });
+    const q = query(collection(db, 'tasks'), where('userId', '==', userId));
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const tasksData = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        id: doc.id
+      })) as Task[];
+      
+      set({ tasks: tasksData, isTasksLoading: false });
+    }, (error) => {
+      console.error("Gagal sinkronisasi data:", error);
+      toast.error("Koneksi database terputus.");
+      set({ isTasksLoading: false });
+    });
+
+    return unsubscribe; // Mengembalikan fungsi untuk membersihkan listener saat user logout
+  },
+
+  // 2. TAMBAH TUGAS KE CLOUD
+  addTask: async (task) => {
+    try {
+      const docRef = doc(collection(db, 'tasks'), task.id);
+      await setDoc(docRef, task);
+      toast.success("Tugas berhasil ditambahkan!");
+    } catch (error) {
+      console.error("Gagal menambah tugas:", error);
+      toast.error("Gagal menyimpan tugas.");
+    }
+  },
+
+  // 3. GESER TUGAS (DRAG & DROP)
+  moveTask: async (taskId, newSection) => {
+    // Optimistic UI Update: Ubah di layar duluan agar animasi drag & drop tetap mulus tanpa lag
     set((state) => ({
       tasks: state.tasks.map((task) =>
         task.id === taskId ? { ...task, section: newSection } : task
       ),
-    })),
+    }));
+
+    // Update secara background ke Firebase
+    try {
+      const docRef = doc(db, 'tasks', taskId);
+      await updateDoc(docRef, { section: newSection, updatedAt: Date.now() });
+    } catch (error) {
+      console.error("Gagal memindahkan tugas:", error);
+      toast.error("Gagal memindahkan tugas. Sistem akan memuat ulang.");
+    }
+  },
+
+  // 4. CEKLIS TUGAS SELESAI
+  toggleTaskStatus: async (taskId) => {
+    const task = get().tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+    
+    // Optimistic Update
+    set((state) => ({
+      tasks: state.tasks.map((t) => t.id === taskId ? { ...t, status: newStatus } : t),
+    }));
+
+    try {
+      const docRef = doc(db, 'tasks', taskId);
+      await updateDoc(docRef, { status: newStatus, updatedAt: Date.now() });
+    } catch (error) {
+      console.error("Gagal update status:", error);
+    }
+  },
+
+  // 5. HAPUS TUGAS
+  deleteTask: async (taskId) => {
+    try {
+      const docRef = doc(db, 'tasks', taskId);
+      await deleteDoc(docRef);
+      toast.success("Tugas dihapus.");
+    } catch (error) {
+      console.error("Gagal menghapus tugas:", error);
+    }
+  }
 }));

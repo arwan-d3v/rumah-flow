@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CookingTemplate } from '@/types/schema';
-import { playNotificationSound } from '@/lib/audio';
+import { playStartSound, playWarningSound, playTickSound, playEndSound } from '@/lib/audio'; // IMPOR 3 SUARA BARU
 import { toast } from 'sonner';
 
 interface CookingState {
@@ -11,7 +11,6 @@ interface CookingState {
   isRunning: boolean;
   lastUpdated: number;
   
-  // State Dialog Kustomisasi Global
   customizingTemplateId: string | null;
   setCustomizingTemplateId: (id: string | null) => void;
   
@@ -38,13 +37,16 @@ export const useCookingStore = create<CookingState>()(
       startSession: (template) => {
         const firstStage = template.stages[0];
         const totalSeconds = (firstStage.durationMin * 60) + firstStage.durationSec;
+        
+        playStartSound(); // 🎵 BUNYIKAN SUARA START
+        
         set({ 
           activeTemplate: template, 
           currentStageIndex: 0, 
           remainingSeconds: totalSeconds,
           isRunning: true,
           lastUpdated: Date.now(),
-          customizingTemplateId: null // Otomatis tutup dialog saat mulai
+          customizingTemplateId: null 
         });
       },
 
@@ -59,8 +61,8 @@ export const useCookingStore = create<CookingState>()(
         const newRemaining = Math.max(0, state.remainingSeconds - diffInSeconds);
         set({ remainingSeconds: newRemaining, lastUpdated: now });
         if (newRemaining === 0) {
-          playNotificationSound();
-          toast.info("Waktu stage ini sudah habis saat Anda offline!");
+          playEndSound(); // 🎵 BUNYIKAN SUARA END (Offline)
+          toast.info("Waktu tahap ini sudah habis saat Anda menutup aplikasi!");
         }
       },
 
@@ -77,19 +79,32 @@ export const useCookingStore = create<CookingState>()(
             lastUpdated: Date.now()
           });
         } else {
-          playNotificationSound();
+          playEndSound(); // 🎵 BUNYIKAN SUARA END (Selesai semua tahap)
           set({ activeTemplate: null, isRunning: false });
         }
       },
 
-      tick: () => {
+tick: () => {
         const state = get();
         if (!state.isRunning || state.remainingSeconds <= 0) return;
         const newRemaining = state.remainingSeconds - 1;
+        
         set({ remainingSeconds: newRemaining, lastUpdated: Date.now() });
         
+        // Suara Peringatan Sisa 15 Detik
+        if (newRemaining === 15) {
+          playWarningSound();
+          toast.warning("15 detik lagi! Siap-siap angkat.", { duration: 3000 });
+        }
+        
+        // FITUR COUNTDOWN 5 DETIK: Bunyi "Tick" setiap detik di sisa 5, 4, 3, 2, 1
+        if (newRemaining <= 5 && newRemaining > 0) {
+          playTickSound();
+        }
+        
+        // Waktu Habis (0 Detik)
         if (newRemaining === 0) {
-          playNotificationSound();
+          playEndSound(); // Bunyikan lonceng panjang
           const currentStage = state.activeTemplate?.stages[state.currentStageIndex];
           if (currentStage?.autoNext) {
             get().nextStage();
@@ -102,7 +117,6 @@ export const useCookingStore = create<CookingState>()(
     {
       name: 'rumah-flow-cooking-storage',
       storage: createJSONStorage(() => localStorage),
-      // SANGAT PENTING: Jangan simpan status dialog ke localstorage
       partialize: (state) => ({
         activeTemplate: state.activeTemplate,
         currentStageIndex: state.currentStageIndex,
