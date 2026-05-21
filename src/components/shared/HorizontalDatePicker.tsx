@@ -20,16 +20,19 @@ export function HorizontalDatePicker({ selectedDate, onChange }: Props) {
     return d;
   });
 
+  // Show only 5 days on mobile: selectedDate ± 2, rest hidden via CSS
   return (
-    <div className="flex items-center justify-between gap-2 md:gap-4 bg-white p-2 rounded-3xl shadow-sm border border-sand-100">
-      <button onClick={() => onChange(subDays(selectedDate, 1))} className="p-2 text-sand-400 hover:text-sage-500 transition-colors">
+    <div className="flex items-center justify-between gap-1 md:gap-4 bg-card px-2 md:px-3 py-2 rounded-3xl shadow-sm border border-border">
+      <button onClick={() => onChange(subDays(selectedDate, 1))} className="p-2 md:p-2.5 text-muted-foreground hover:text-foreground transition-colors shrink-0">
         <ChevronLeft className="w-5 h-5" />
       </button>
 
-      <div className="flex flex-1 justify-between overflow-x-auto no-scrollbar gap-2 px-2">
+      <div className="flex flex-1 justify-center overflow-x-auto no-scrollbar gap-0.5 md:gap-2 px-0.5 md:px-2">
         {days.map((date, idx) => {
           const isSelected = date.toDateString() === selectedDate.toDateString();
           const dateStr = format(date, 'yyyy-MM-dd');
+          const dayDiff = Math.abs(date.getDate() - selectedDate.getDate());
+          const isVisibleOnMobile = dayDiff <= 2; // Only show ±2 days on mobile
           
           // FASE 3: Cek apakah tanggal ini adalah hari libur nasional
           const holiday = getHolidayByDate(dateStr);
@@ -39,10 +42,12 @@ export function HorizontalDatePicker({ selectedDate, onChange }: Props) {
             <button
               key={idx}
               onClick={() => onChange(date)}
-              className={`flex flex-col items-center justify-center min-w-[3.5rem] h-16 rounded-2xl transition-all ${
+              className={`flex-col items-center justify-center w-11 md:min-w-[3.5rem] h-14 md:h-16 rounded-2xl transition-all shrink-0 ${
+                !isVisibleOnMobile && !isSelected ? 'hidden' : 'flex'
+              } ${
                 isSelected 
-                  ? 'bg-sage-500 text-white shadow-md shadow-sage-900/20 scale-105' 
-                  : 'bg-transparent text-sand-600 hover:bg-sand-50'
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-105' 
+                  : 'bg-transparent text-foreground/70 hover:bg-muted'
               }`}
             >
               <span className={`text-[10px] font-bold uppercase tracking-widest ${isHoliday && !isSelected ? 'text-rose-500' : ''}`}>

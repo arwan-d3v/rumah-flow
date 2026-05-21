@@ -5,21 +5,52 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Calming Palette (Rumah Flow) */
-  --color-sage-50: #f4f7f4;
-  --color-sage-100: #e3ebe3;
-  --color-sage-500: #8ba888;
-  --color-sage-900: #3d4e3d;
-  
-  --color-sand-50: #fdfbf7;
-  --color-sand-100: #f8f3e6;
-  --color-sand-500: #d4c4a8;
-  --color-sand-900: #6a5e4b;
-  
-  --color-rose-50: #fdf8f8;
-  --color-rose-100: #faeded;
-  --color-rose-500: #d99c9c;
-  --color-rose-900: #6d4848;
+  /* ── Custom Charming Palette (Rumah Flow) ── */
+  --color-sage-50: #f2f7f3;
+  --color-sage-100: #dce9dd;
+  --color-sage-200: #b8d3ba;
+  --color-sage-300: #8bb88e;
+  --color-sage-400: #659c69;
+  --color-sage-500: #48804c;
+  --color-sage-600: #38673b;
+  --color-sage-700: #2c5330;
+  --color-sage-800: #244427;
+  --color-sage-900: #1a3320;
+
+  --color-sand-50: #fefdfb;
+  --color-sand-100: #faf5ea;
+  --color-sand-200: #f2e4c9;
+  --color-sand-300: #e4cfa6;
+  --color-sand-400: #d4b680;
+  --color-sand-500: #c19a60;
+  --color-sand-600: #a47c47;
+  --color-sand-700: #7d5e38;
+  --color-sand-800: #5c462a;
+  --color-sand-900: #3d2f1e;
+
+  /* ── Rose / Crimson for Masak ── */
+  --color-rose-50: #fef2f3;
+  --color-rose-100: #fde0e3;
+  --color-rose-200: #fbc0c6;
+  --color-rose-300: #f78f9b;
+  --color-rose-400: #f15a6f;
+  --color-rose-500: #e82d4c;
+  --color-rose-600: #cc1a3a;
+  --color-rose-700: #a81531;
+  --color-rose-800: #8a1330;
+  --color-rose-900: #70122c;
+
+  /* ── Lavender / Blue for Belanja ── */
+  --color-lavender-50: #f5f3ff;
+  --color-lavender-100: #ede9fe;
+  --color-lavender-200: #ddd6fe;
+  --color-lavender-300: #c4b5fd;
+  --color-lavender-400: #a78bfa;
+  --color-lavender-500: #8b5cf6;
+  --color-lavender-600: #7c3aed;
+  --color-lavender-700: #6d28d9;
+  --color-lavender-800: #5b21b6;
+  --color-lavender-900: #4c1d95;
 
   /* Mapping Shadcn UI System Variables */
   --color-background: hsl(var(--background));
@@ -47,49 +78,55 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
+/* ═══════════════════════════════════════════
+   LIGHT MODE — Elegant Charming High-Contrast
+   ═══════════════════════════════════════════ */
 :root {
-  --background: 40 50% 98%;
-  --foreground: 0 0% 20%;
+  --background: 40 30% 97%;
+  --foreground: 220 15% 15%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 20%;
+  --card-foreground: 220 15% 15%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 20%;
-  --primary: 115 17% 60%;
+  --popover-foreground: 220 15% 15%;
+  --primary: 348 65% 45%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 40 50% 98%;
-  --secondary-foreground: 0 0% 20%;
-  --muted: 40 20% 96%;
-  --muted-foreground: 0 0% 40%;
-  --accent: 40 20% 96%;
-  --accent-foreground: 0 0% 20%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 115 17% 60%;
+  --secondary: 35 50% 94%;
+  --secondary-foreground: 220 15% 20%;
+  --muted: 35 30% 94%;
+  --muted-foreground: 220 10% 40%;
+  --accent: 35 50% 94%;
+  --accent-foreground: 220 15% 20%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 35 20% 85%;
+  --input: 35 20% 85%;
+  --ring: 348 65% 45%;
   --radius: 1rem;
 }
 
+/* ═══════════════════════════════════════════
+   DARK MODE — Sleek, Deep, Premium
+   ═══════════════════════════════════════════ */
 .dark {
-  --background: 0 0% 12%;
-  --foreground: 40 50% 98%;
-  --card: 0 0% 15%;
-  --card-foreground: 40 50% 98%;
-  --popover: 0 0% 15%;
-  --popover-foreground: 40 50% 98%;
-  --primary: 115 17% 60%;
+  --background: 0 0% 7%;
+  --foreground: 40 30% 93%;
+  --card: 0 0% 11%;
+  --card-foreground: 40 30% 93%;
+  --popover: 0 0% 11%;
+  --popover-foreground: 40 30% 93%;
+  --primary: 348 70% 52%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 18%;
-  --secondary-foreground: 40 50% 98%;
-  --muted: 0 0% 18%;
-  --muted-foreground: 0 0% 65%;
-  --accent: 0 0% 18%;
-  --accent-foreground: 40 50% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 40 50% 98%;
-  --border: 0 0% 20%;
-  --input: 0 0% 20%;
-  --ring: 115 17% 60%;
+  --secondary: 0 0% 15%;
+  --secondary-foreground: 40 30% 93%;
+  --muted: 0 0% 15%;
+  --muted-foreground: 220 8% 65%;
+  --accent: 0 0% 15%;
+  --accent-foreground: 40 30% 93%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --ring: 348 70% 52%;
 }
 
 /* Sembunyikan scrollbar untuk kalender horizontal */
@@ -106,6 +143,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-sage-100 selection:text-sage-900;
+    @apply bg-background text-foreground antialiased;
   }
 }
