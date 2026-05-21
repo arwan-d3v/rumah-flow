@@ -35,6 +35,7 @@ export interface Task {
   
   order: number;
   cookingTemplateId?: string;
+  timerDurationMin?: number;
   createdAt: number; // Pakai unix timestamp agar mudah diserialisasi
   updatedAt: number;
 }

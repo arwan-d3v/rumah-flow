@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTaskStore } from '@/store/useTaskStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { SectionType } from '@/types/schema';
+import { RecurrenceType, SectionType } from '@/types/schema';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { CheckCircle2, Loader2, ChefHat, Clock } from 'lucide-react';
@@ -46,6 +46,8 @@ export function QuickAddTaskDialog({ isOpen, onClose, selectedDateStr }: Props) 
     setIsSubmitting(true);
     
     try {
+      const recurrence: RecurrenceType = isDaily ? 'daily' : 'none';
+
       const newTask = {
         id: `task_${Date.now()}`,
         userId: user.uid,
@@ -53,11 +55,9 @@ export function QuickAddTaskDialog({ isOpen, onClose, selectedDateStr }: Props) 
         status: 'todo' as const,
         section: section,
         targetDate: selectedDateStr,
-        
-        // PERBAIKAN TYPESCRIPT DI BARIS BAWAH INI:
-        recurrence: (isDaily ? 'daily' : 'none') as 'daily' | 'none',
-        
+        recurrence,
         order: tasks.filter(t => t.targetDate === selectedDateStr && t.section === section).length,
+        timerDurationMin: section === 'meals' ? 30 : undefined,
         ...(section === 'meals' && selectedTemplateId ? { cookingTemplateId: selectedTemplateId } : {}),
         createdAt: Date.now(),
         updatedAt: Date.now(),

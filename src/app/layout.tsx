@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthWrapper } from "@/components/shared/AuthWrapper";
+import { PwaSetup } from "@/components/shared/PwaSetup";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
           <AuthWrapper>
             {children}
           </AuthWrapper>
+          <PwaSetup />
         </Providers>
         <Toaster position="top-center" richColors theme="system" />
       </body>

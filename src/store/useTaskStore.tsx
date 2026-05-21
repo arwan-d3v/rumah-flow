@@ -18,6 +18,7 @@ interface TaskState {
   addTask: (task: Task) => Promise<void>;
   moveTask: (taskId: string, newSection: SectionType) => Promise<void>;
   toggleTaskStatus: (taskId: string) => Promise<void>;
+  updateTask: (taskId: string, payload: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
 }
 
@@ -94,6 +95,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       await updateDoc(docRef, { status: newStatus, updatedAt: Date.now() });
     } catch (error) {
       console.error("Gagal update status:", error);
+    }
+  },
+
+  updateTask: async (taskId, payload) => {
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task.id === taskId ? { ...task, ...payload, updatedAt: Date.now() } : task
+      ),
+    }));
+
+    try {
+      const docRef = doc(db, 'tasks', taskId);
+      await updateDoc(docRef, { ...payload, updatedAt: Date.now() });
+      toast.success('Perubahan task tersimpan.');
+    } catch (error) {
+      console.error('Gagal memperbarui task:', error);
+      toast.error('Gagal memperbarui task.');
     }
   },
 
