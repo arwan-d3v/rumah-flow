@@ -3,7 +3,7 @@ import { Task, SectionType } from '@/types/schema';
 import { db } from '@/lib/firebase/config';
 import { 
   collection, doc, setDoc, updateDoc, deleteDoc, 
-  query, where, onSnapshot 
+  query, where, onSnapshot, getDocs, writeBatch 
 } from 'firebase/firestore';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ interface TaskState {
   toggleTaskStatus: (taskId: string) => Promise<void>;
   updateTask: (taskId: string, payload: Partial<Task>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
+  deleteTasksBySection: (section: string, userId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -117,12 +118,44 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   // 5. HAPUS TUGAS
   deleteTask: async (taskId) => {
+    // Optimistic Update — hapus dari state lokal dulu
+    set((state) => ({
+      tasks: state.tasks.filter((t) => t.id !== taskId),
+    }));
+
     try {
       const docRef = doc(db, 'tasks', taskId);
       await deleteDoc(docRef);
       toast.success("Tugas dihapus.");
     } catch (error) {
       console.error("Gagal menghapus tugas:", error);
+      // Rollback: re-fetch (subscribe akan mengembalikan data)
+    }
+  },
+
+  deleteTasksBySection: async (section, userId) => {
+    if (!userId) return;
+    
+    // Optimistic Update — hapus dari state lokal dulu
+    set((state) => ({
+      tasks: state.tasks.filter((t) => !(t.section === section && t.userId === userId)),
+    }));
+
+    try {
+      const q = query(
+        collection(db, 'tasks'),
+        where('userId', '==', userId),
+        where('section', '==', section)
+      );
+      const snapshot = await getDocs(q);
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+      await batch.commit();
+      toast.success(`Semua tugas di "${section}" dihapus.`);
+    } catch (error) {
+      console.error("Gagal menghapus tugas batch:", error);
     }
   }
 }));

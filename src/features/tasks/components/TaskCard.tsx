@@ -4,12 +4,22 @@ import { useState, useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CookingTemplate, Task } from '@/types/schema';
-import { GripVertical, Play, Pencil, Check, Clock, MoreVertical, ChefHat } from 'lucide-react';
+import { GripVertical, Play, Pencil, Check, Clock, MoreVertical, ChefHat, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCookingStore } from '@/store/useCookingStore';
 import { useTaskStore } from '@/store/useTaskStore';
 import { DEFAULT_COOKING_TEMPLATES } from '@/lib/constants';
 import { CopyTaskDialog } from './CopyTaskDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface TaskCardProps {
   task: Task;
@@ -22,7 +32,10 @@ export function TaskCard({ task }: TaskCardProps) {
 
   const [isEditingDuration, setIsEditingDuration] = useState(false);
   const [isCopyTaskOpen, setIsCopyTaskOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState(task.timerDurationMin ?? 30);
+
+  const deleteTask = useTaskStore((state) => state.deleteTask);
 
   const timerMinutes = useMemo(() => task.timerDurationMin ?? durationMinutes ?? 30, [task.timerDurationMin, durationMinutes]);
 
@@ -169,6 +182,20 @@ export function TaskCard({ task }: TaskCardProps) {
           >
             <MoreVertical className="h-4 w-4" />
           </button>
+
+          <button
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setIsDeleting(true);
+            }}
+            className="inline-flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl border border-border bg-card text-muted-foreground transition hover:border-destructive/40 hover:text-destructive"
+            title="Hapus tugas"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
 
         {isEditingDuration && (
@@ -208,6 +235,28 @@ export function TaskCard({ task }: TaskCardProps) {
         isOpen={isCopyTaskOpen}
         onOpenChange={setIsCopyTaskOpen}
       />
+
+      <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus tugas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tugas &ldquo;<span className="font-semibold text-foreground">{task.title}</span>&rdquo; akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                deleteTask(task.id);
+              }}
+            >
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

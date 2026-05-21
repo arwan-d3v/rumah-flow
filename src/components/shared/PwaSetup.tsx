@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Bell, Download, Home, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging';
@@ -13,11 +13,19 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 const FCM_VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '';
+const DISMISSED_KEY = 'pwa_banner_dismissed';
 
 export function PwaSetup() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(DISMISSED_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [permissionState, setPermissionState] = useState<NotificationPermission>(() =>
     typeof window !== 'undefined' ? Notification.permission : 'default'
   );
@@ -47,6 +55,16 @@ export function PwaSetup() {
     };
   }, []);
 
+  const dismissBanner = useCallback(() => {
+    setShowBanner(false);
+    setIsDismissed(true);
+    try {
+      localStorage.setItem(DISMISSED_KEY, 'true');
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
@@ -62,15 +80,17 @@ export function PwaSetup() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (permissionState !== 'granted' || token) return;
 
-    if (permissionState === 'granted' && !token) {
-      isSupported()
-        .then((supported) => {
-          if (!supported) {
-            toast.error('Notifikasi browser tidak didukung di perangkat ini.');
-            return;
-          }
+    // iOS Safari does NOT support FCM — wrap safely
+    isSupported()
+      .then((supported) => {
+        if (!supported) {
+          console.info('FCM tidak didukung di browser ini (iOS/Safari). Lewati.');
+          return;
+        }
 
+        try {
           const messaging = getMessaging(app);
           return getToken(messaging, {
             vapidKey: FCM_VAPID_KEY || undefined,
@@ -91,11 +111,13 @@ export function PwaSetup() {
             .catch((err) => {
               console.warn('Tidak dapat mengambil token FCM:', err);
             });
-        })
-        .catch((err) => {
-          console.warn('FCM tidak didukung:', err);
-        });
-    }
+        } catch (err) {
+          console.warn('Gagal inisialisasi FCM:', err);
+        }
+      })
+      .catch((err) => {
+        console.warn('FCM isSupported check gagal:', err);
+      });
   }, [permissionState, token]);
 
   const requestNotifications = async () => {
@@ -135,7 +157,8 @@ export function PwaSetup() {
     setInstallPrompt(null);
   };
 
-  if (!showBanner && permissionState === 'granted') return null;
+  if (!showBanner || isDismissed) return null;
+  if (permissionState === 'granted' && isInstalled) return null;
 
   return (
     <div className="fixed bottom-4 left-1/2 z-50 w-[min(96%,420px)] -translate-x-1/2 rounded-3xl border border-sand-200 bg-white/95 p-4 shadow-2xl shadow-sand-950/10 backdrop-blur-xl">
@@ -149,7 +172,7 @@ export function PwaSetup() {
               <p className="text-sm font-semibold text-sand-900">Rumah Flow seperti app native</p>
               <p className="mt-1 text-xs text-sand-500">Pasang ke home screen dan aktifkan notifikasi untuk pengingat masak.</p>
             </div>
-            <button onClick={() => setShowBanner(false)} className="rounded-full p-2 text-sand-400 hover:bg-sand-100">
+            <button onClick={dismissBanner} className="rounded-full p-2 text-sand-400 hover:bg-sand-100 flex-shrink-0" aria-label="Tutup banner">
               <X className="h-4 w-4" />
             </button>
           </div>

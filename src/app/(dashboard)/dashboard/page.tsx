@@ -126,8 +126,13 @@ export default function DashboardPage() {
   const holidayToday = useHolidayStore(state => state.getHolidayByDate)(selectedDateStr);
 
   const visibleSections = useMemo(
-    () => SECTIONS.filter((section) => filteredTasksForToday.some((task) => task.section === section.id)),
-    [filteredTasksForToday]
+    () => {
+      // Untuk Daily Plan, tampilkan SEMUA section (agar ghost button "+ Tambah" selalu muncul)
+      if (displayMode === 'daily') return SECTIONS;
+      // Untuk Masak dan Belanja, hanya tampilkan section yang relevan
+      return SECTIONS.filter((section) => filteredTasksForToday.some((task) => task.section === section.id));
+    },
+    [filteredTasksForToday, displayMode]
   );
 
   // --- D. HOOKS & LIFECYCLE EFFECTS ---
